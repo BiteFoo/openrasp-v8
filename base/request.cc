@@ -16,8 +16,12 @@ struct AsyncReq {
   v8::Persistent<v8::Promise::Resolver> resolver;
 };
 
-void micro_task(void* data) {
+void callback(void* data) {
   auto req = reinterpret_cast<AsyncReq*>(data);
+  if (req->async_job->is_disposed) {
+    delete req;
+    return;
+  }
   auto isolate = req->isolate;
   v8::HandleScope handle_scope(isolate);
   v8::TryCatch try_catch(isolate);
@@ -73,22 +77,23 @@ void async_task(AsyncReq* req) {
   } else {
     req->response = req->session.Get();
   }
-  {
-    std::lock_guard<std::mutex> lock(req->async_job->mtx);
-    if (req->async_job->is_disposed) {
-      delete req;
-      return;
-    }
-    req->async_job->count--;
-    req->async_job->cv.notify_all();
-    req->isolate->EnqueueMicrotask(micro_task, req);
+
+  std::lock_guard<std::mutex> lock(req->async_job->mtx);
+  if (req->async_job->is_disposed) {
+    delete req;
+    return;
   }
+  req->async_job->count--;
+  req->async_job->cv.notify_all();
+  req->async_job->callbacks.emplace_back(callback, req);
 }
 
 void request_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
   auto isolate = reinterpret_cast<Isolate*>(info.GetIsolate());
+  v8::HandleScope handle_scope(isolate);
   v8::TryCatch try_catch(isolate);
   auto context = isolate->GetCurrentContext();
+  v8::Context::Scope context_scope(context);
   v8::Local<v8::Promise::Resolver> resolver;
   if (!v8::Promise::Resolver::New(context).ToLocal(&resolver)) {
     try_catch.ReThrow();
@@ -237,10 +242,12 @@ void request_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
   req->session.SetHeader(header);
   req->session.SetVerifySsl(false);
 
-  {
-    std::lock_guard<std::mutex> lock(req->async_job->mtx);
-    req->async_job->count++;
+  std::lock_guard<std::mutex> lock(req->async_job->mtx);
+  if (req->async_job->is_disposed) {
+    delete req;
+    return;
   }
+  req->async_job->count++;
   std::thread(async_task, req).detach();
 }
 

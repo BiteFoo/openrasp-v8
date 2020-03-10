@@ -28,6 +28,7 @@
 #include <thread>
 #include <unordered_set>
 #include <vector>
+#include <list>
 
 namespace openrasp_v8 {
 
@@ -107,8 +108,10 @@ class PluginFile {
 class IsolateData {
  public:
   struct AsyncJob {
+    typedef void (*Callback)(void* data);
     bool is_disposed = false;
     uint64_t count = 0;
+    std::list<std::pair<Callback, void*>> callbacks;
     std::mutex mtx;
     std::condition_variable cv;
   };

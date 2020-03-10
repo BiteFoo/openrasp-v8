@@ -72,6 +72,7 @@ Isolate* Isolate::New(Snapshot* snapshot_blob, uint64_t timestamp) {
 }
 
 void Isolate::Initialize() {
+  v8::Isolate::Scope isolate_scope(this);
   v8::HandleScope handle_scope(this);
   v8::Local<v8::Context> context = v8::Context::New(this);
   v8::Context::Scope context_scope(context);
@@ -113,9 +114,15 @@ void Isolate::SetData(IsolateData* data) {
 
 void Isolate::Dispose() {
   auto data = GetData();
+  auto async_job = data->async_job;
   {
-    std::lock_guard<std::mutex> lock(data->async_job->mtx);
-    data->async_job->is_disposed = true;
+    std::lock_guard<std::mutex> lock(async_job->mtx);
+    async_job->is_disposed = true;
+  }
+  while (!async_job->callbacks.empty()) {
+    auto p = async_job->callbacks.front();
+    async_job->callbacks.pop_front();
+    p.first(p.second);
   }
   delete data;
   v8::Isolate::Dispose();
@@ -240,10 +247,23 @@ v8::MaybeLocal<v8::Value> Isolate::Log(v8::Local<v8::Value> value) {
 }
 
 void Isolate::WaitAsyncJobs() {
-  auto data = GetData();
-  std::unique_lock<std::mutex> lock(data->async_job->mtx);
-  data->async_job->cv.wait(lock, [&data]() { return data->async_job->count == 0; });
-  RunMicrotasks();
+  auto isolate = this;
+  auto context = isolate->GetCurrentContext();
+  auto async_job = isolate->GetData()->async_job;
+  std::unique_lock<std::mutex> lock(async_job->mtx);
+  while (async_job->count != 0) {
+    async_job->cv.wait(lock);
+    while (!async_job->callbacks.empty()) {
+      auto p = async_job->callbacks.front();
+      async_job->callbacks.pop_front();
+      lock.unlock();
+      p.first(p.second);
+      lock.lock();
+    }
+    lock.unlock();
+    isolate->RunMicrotasks();
+    lock.lock();
+  }
 }
 
 }  // namespace openrasp_v8
