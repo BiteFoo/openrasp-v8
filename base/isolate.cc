@@ -112,7 +112,12 @@ void Isolate::SetData(IsolateData* data) {
 }
 
 void Isolate::Dispose() {
-  delete GetData();
+  auto data = GetData();
+  {
+    std::lock_guard<std::mutex> lock(data->async_job->mtx);
+    data->async_job->is_disposed = true;
+  }
+  delete data;
   v8::Isolate::Dispose();
 }
 
@@ -173,6 +178,7 @@ v8::MaybeLocal<v8::Array> Isolate::Check(v8::Local<v8::Context> context,
     v8::Local<v8::Value> item;
     if (arr->Get(context, i).ToLocal(&item)) {
       if (item->IsPromise()) {
+        isolate->WaitAsyncJobs();
         item = item.As<v8::Promise>()->Result();
         if (item->IsUndefined()) {
           continue;
@@ -231,6 +237,13 @@ v8::MaybeLocal<v8::Value> Isolate::Log(v8::Local<v8::Value> value) {
     continue;
   }
   return handle_scope.EscapeMaybe(rst);
+}
+
+void Isolate::WaitAsyncJobs() {
+  auto data = GetData();
+  std::unique_lock<std::mutex> lock(data->async_job->mtx);
+  data->async_job->cv.wait(lock, [&data]() { return data->async_job->count == 0; });
+  RunMicrotasks();
 }
 
 }  // namespace openrasp_v8

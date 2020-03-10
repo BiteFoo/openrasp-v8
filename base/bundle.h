@@ -106,6 +106,13 @@ class PluginFile {
 
 class IsolateData {
  public:
+  struct AsyncJob {
+    bool is_disposed = false;
+    uint64_t count = 0;
+    std::mutex mtx;
+    std::condition_variable cv;
+  };
+
   v8::Isolate::CreateParams create_params;
   v8::Persistent<v8::Context> context;
   v8::Persistent<v8::Object> RASP;
@@ -119,6 +126,7 @@ class IsolateData {
   bool is_oom = false;
   uint64_t timestamp = 0;
   void* custom_data = nullptr;
+  std::shared_ptr<AsyncJob> async_job = std::make_shared<AsyncJob>();
 };
 
 class Snapshot : public v8::StartupData {
@@ -164,6 +172,7 @@ class Isolate : public v8::Isolate {
                                        v8::Local<v8::String> filename,
                                        v8::Local<v8::Integer> line_offset);
   v8::MaybeLocal<v8::Value> Log(v8::Local<v8::Value> value);
+  void WaitAsyncJobs();
 };
 
 class TimeoutTask : public v8::Task {

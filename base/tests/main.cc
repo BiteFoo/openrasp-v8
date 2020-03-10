@@ -377,13 +377,16 @@ RASP.request({
     data: {
         a: 2333,
         b: '6666'
-    }
+    },
+    timeout: 5000,
+    connectTimeout: 5000
 }).then(ret => {
   ret.data = JSON.parse(ret.data)
   return JSON.stringify(ret)
 })
           )",
         "request");
+    isolate->WaitAsyncJobs();
     auto promise = maybe_rst.ToLocalChecked().As<v8::Promise>();
     REQUIRE(promise->State() == v8::Promise::PromiseState::kFulfilled);
     auto rst = std::string(*v8::String::Utf8Value(isolate, promise->Result()));
@@ -406,13 +409,16 @@ RASP.request({
         a: 2333,
         b: '6666'
     },
-    data: 'a=2333&b=6666'
+    data: 'a=2333&b=6666',
+    timeout: 5000,
+    connectTimeout: 5000
 }).then(ret => {
   ret.data = JSON.parse(ret.data)
   return JSON.stringify(ret)
 })
           )",
           "request");
+      isolate->WaitAsyncJobs();
       auto promise = maybe_rst.ToLocalChecked().As<v8::Promise>();
       REQUIRE(promise->State() == v8::Promise::PromiseState::kFulfilled);
       auto rst = std::string(*v8::String::Utf8Value(isolate, promise->Result()));
@@ -440,13 +446,16 @@ RASP.request({
     data: {
         a: 2333,
         b: '6666'
-    }
+    },
+    timeout: 5000,
+    connectTimeout: 5000
 }).then(ret => {
   ret.data = JSON.parse(ret.data)
   return JSON.stringify(ret)
 })
           )",
           "request");
+      isolate->WaitAsyncJobs();
       auto promise = maybe_rst.ToLocalChecked().As<v8::Promise>();
       REQUIRE(promise->State() == v8::Promise::PromiseState::kFulfilled);
       auto rst = std::string(*v8::String::Utf8Value(isolate, promise->Result()));
@@ -463,13 +472,16 @@ RASP.request({
     method: 'post',
     url: 'https://www.httpbin.org/post',
     data: { a: 1 },
-    deflate: true
+    deflate: true,
+    timeout: 5000,
+    connectTimeout: 5000
 }).then(ret => {
   ret.data = JSON.parse(ret.data)
   return JSON.stringify(ret)
 })
           )",
           "request");
+      isolate->WaitAsyncJobs();
       auto promise = maybe_rst.ToLocalChecked().As<v8::Promise>();
       REQUIRE(promise->State() == v8::Promise::PromiseState::kFulfilled);
       auto rst = std::string(*v8::String::Utf8Value(isolate, promise->Result()));
@@ -485,6 +497,7 @@ RASP.request({
 }).catch(err => Promise.reject(JSON.stringify(err)))
           )",
         "request");
+    isolate->WaitAsyncJobs();
     auto promise = maybe_rst.ToLocalChecked().As<v8::Promise>();
     REQUIRE(promise->State() == v8::Promise::PromiseState::kRejected);
     auto rst = std::string(*v8::String::Utf8Value(isolate, promise->Result()));
@@ -498,6 +511,7 @@ RASP.request({
 }).catch(err => Promise.reject(JSON.stringify(err)))
           )",
         "request");
+    isolate->WaitAsyncJobs();
     auto promise = maybe_rst.ToLocalChecked().As<v8::Promise>();
     REQUIRE(promise->State() == v8::Promise::PromiseState::kRejected);
     auto rst = std::string(*v8::String::Utf8Value(isolate, promise->Result()));
@@ -509,14 +523,17 @@ RASP.request({
         R"(
 RASP.request({
     url: 'https://httpbin.org/redirect/2',
-    maxRedirects: 0
+    maxRedirects: 0,
+    timeout: 5000,
+    connectTimeout: 5000
 }).then(ret => JSON.stringify(ret))
           )",
         "request");
+    isolate->WaitAsyncJobs();
     auto promise = maybe_rst.ToLocalChecked().As<v8::Promise>();
     REQUIRE(promise->State() == v8::Promise::PromiseState::kFulfilled);
     auto rst = std::string(*v8::String::Utf8Value(isolate, promise->Result()));
-    REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("Location":"/relative-redirect/1")==="));
+    REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("/relative-redirect/1")==="));
   }
   SECTION("undefined config") {
     auto maybe_rst = isolate->ExecScript(
@@ -524,6 +541,7 @@ RASP.request({
 RASP.request()
           )",
         "request");
+    isolate->WaitAsyncJobs();
     auto promise = maybe_rst.ToLocalChecked().As<v8::Promise>();
     REQUIRE(promise->State() == v8::Promise::PromiseState::kRejected);
     auto rst = std::string(*v8::String::Utf8Value(isolate, promise->Result()));
@@ -535,6 +553,7 @@ RASP.request()
 RASP.request({}).catch(err => Promise.reject(JSON.stringify(err)))
           )",
         "request");
+    isolate->WaitAsyncJobs();
     auto promise = maybe_rst.ToLocalChecked().As<v8::Promise>();
     REQUIRE(promise->State() == v8::Promise::PromiseState::kRejected);
     auto rst = std::string(*v8::String::Utf8Value(isolate, promise->Result()));

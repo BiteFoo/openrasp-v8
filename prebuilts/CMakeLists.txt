@@ -2,10 +2,17 @@ cmake_minimum_required(VERSION 3.0.0)
 
 project(prebuilts LANGUAGES CXX)
 
-string(TOLOWER ${CMAKE_SYSTEM_NAME} SYSTEM_NAME)
+include(${CMAKE_CURRENT_SOURCE_DIR}/../vendors/cmake/detect_architecture.cmake)
 
+string(TOLOWER ${CMAKE_SYSTEM_NAME} SYSTEM_NAME)
 set(PREBUILTS_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/${SYSTEM_NAME})
 set(PREBUILTS_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/${SYSTEM_NAME} PARENT_SCOPE)
+
+if(ARCH64)
+    set(LIBS_PREFIX ${PREBUILTS_PREFIX}/lib64)
+else()
+    set(LIBS_PREFIX ${PREBUILTS_PREFIX}/lib32)
+endif()
 
 if(NOT ${SYSTEM_NAME} STREQUAL "windows")
     message(STATUS "Fetch prebuilts")
@@ -15,15 +22,10 @@ if(NOT ${SYSTEM_NAME} STREQUAL "windows")
     endif()
 endif()
 
+file(REMOVE_RECURSE ${PREBUILTS_PREFIX}/include/cpr ${LIBS_PREFIX}/libcpr.a)
+
 add_library(prebuilts INTERFACE)
 target_include_directories(prebuilts INTERFACE ${PREBUILTS_PREFIX}/include)
-include(${CMAKE_CURRENT_SOURCE_DIR}/../vendors/cmake/detect_architecture.cmake)
-
-if(ARCH64)
-    set(LIBS_PREFIX ${PREBUILTS_PREFIX}/lib64)
-else()
-    set(LIBS_PREFIX ${PREBUILTS_PREFIX}/lib32)
-endif()
 
 file(GLOB LIBS LIST_DIRECTORIES false ${LIBS_PREFIX}/*)
 
