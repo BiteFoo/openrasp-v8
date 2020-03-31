@@ -60,7 +60,10 @@ jobs:
         tag: snapshot
         name: snapshot
         gzip: true
-        files: main.yml:./.github/workflows/main.yml
+        body: >
+          snapshot
+        files: >
+          ./.github/workflows/main.yml
         allow_override: true
         prerelease: true
 
