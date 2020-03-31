@@ -7,32 +7,32 @@ name: CI
 on: push
 
 jobs:
-  build-linux32:
-    runs-on: ubuntu-latest
-    steps:
-    - name: checkout
-      uses: actions/checkout@v2
+  # build-linux32:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - name: checkout
+  #     uses: actions/checkout@v2
 
-    # - name: cache
-    #   uses: actions/cache@v1
-    #   with:
-    #     path: ~/cache
-    #     key: ${{ runner.os }}-cache
+  #   # - name: cache
+  #   #   uses: actions/cache@v1
+  #   #   with:
+  #   #     path: ~/cache
+  #   #     key: ${{ runner.os }}-cache
 
-    - name: setup
-      run: |
-        sudo apt install -yq g++-multilib
-        vendors/fetch_centos6_sysroot.sh
-        prebuilts/fetch_prebuilts.sh
+  #   - name: setup
+  #     run: |
+  #       sudo apt install -yq g++-multilib
+  #       vendors/fetch_centos6_sysroot.sh
+  #       prebuilts/fetch_prebuilts.sh
     
-    - name: build
-      run: bash scripts/linux32.sh
+  #   - name: build
+  #     run: bash scripts/linux32.sh
     
-    - name: upload linux artifact
-      uses: actions/upload-artifact@v1
-      with:
-        name: java_natives_linux32
-        path: java/src/main/resources/natives
+  #   - name: upload linux artifact
+  #     uses: actions/upload-artifact@v1
+  #     with:
+  #       name: java_natives_linux32
+  #       path: java/src/main/resources/natives
 
   build-linux64:
     runs-on: ubuntu-latest
@@ -53,129 +53,135 @@ jobs:
     
     - name: build
       run: bash scripts/linux64.sh
-    
-    - name: upload linux artifact
-      uses: actions/upload-artifact@v1
-      with:
-        name: java_natives_linux64
-        path: java/src/main/resources/natives
-
-  build-osx64:
-    runs-on: macos-latest
-    steps:
-    - name: checkout
-      uses: actions/checkout@v2
-
-    # - name: cache
-    #   uses: actions/cache@v1
-    #   with:
-    #     path: ~/cache
-    #     key: ${{ runner.os }}-cache
-
-    - name: setup
-      run: |
-        bash ./prebuilts/fetch_prebuilts.sh
-    
-    - name: build
-      run: bash scripts/osx64.sh
-    
-    - name: upload osx artifact
-      uses: actions/upload-artifact@v1
-      with:
-        name: java_natives_osx64
-        path: java/src/main/resources/natives
-
-  build-windows32:
-    runs-on: windows-latest
-    steps:
-    - name: checkout
-      uses: actions/checkout@v2
-
-    # - name: cache windows prebuilts
-    #   uses: actions/cache@v1
-    #   with:
-    #     path: ~/cache
-    #     key: ${{ runner.os }}-cache
-
-    - name: setup
-      run: |
-        bash ./prebuilts/fetch_prebuilts.sh
-    
-    - name: build
-      run: bash scripts/windows32.sh
-    
-    - name: upload windows artifact
-      uses: actions/upload-artifact@v1
-      with:
-        name: java_natives_windows32
-        path: java/src/main/resources/natives
-
-  build-windows64:
-    runs-on: windows-latest
-    steps:
-    - name: checkout
-      uses: actions/checkout@v2
-
-    # - name: cache windows prebuilts
-    #   uses: actions/cache@v1
-    #   with:
-    #     path: ~/cache
-    #     key: ${{ runner.os }}-cache
-
-    - name: setup
-      run: |
-        bash ./prebuilts/fetch_prebuilts.sh
-    
-    - name: build
-      run: bash scripts/windows64.sh
-    
-    - name: upload windows artifact
-      uses: actions/upload-artifact@v1
-      with:
-        name: java_natives_windows64
-        path: java/src/main/resources/natives
-
-  deploy-jar:
-    needs: [build-linux32, build-linux64, build-osx64, build-windows32, build-windows64]
-
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: checkout
-      uses: actions/checkout@v2
-    
-    - name: download linux32 artifact
-      uses: actions/download-artifact@v1
-      with:
-        name: java_natives_linux32
-        path: java/src/main/resources/natives
-
-    - name: download linux64 artifact
-      uses: actions/download-artifact@v1
-      with:
-        name: java_natives_linux64
-        path: java/src/main/resources/natives
-
-    - name: download osx64 artifact
-      uses: actions/download-artifact@v1
-      with:
-        name: java_natives_osx64
-        path: java/src/main/resources/natives
-
-    - name: download windows32 artifact
-      uses: actions/download-artifact@v1
-      with:
-        name: java_natives_windows32
-        path: java/src/main/resources/natives
-
-    - name: download windows64 artifact
-      uses: actions/download-artifact@v1
-      with:
-        name: java_natives_windows64
-        path: java/src/main/resources/natives
 
     - name: deploy
       run: |
         cd java
-        mvn deploy -Dregistry=https://maven.pkg.github.com/baidu-security -Dtoken=${{ secrets.GITHUB_TOKEN }}
+        mvn -s settings.xml deploy -Dgithub.token=${{ secrets.GITHUB_TOKEN }}
         cd -
+    
+    # - name: upload linux artifact
+    #   uses: actions/upload-artifact@v1
+    #   with:
+    #     name: java_natives_linux64
+    #     path: java/src/main/resources/natives
+
+  # build-osx64:
+  #   runs-on: macos-latest
+  #   steps:
+  #   - name: checkout
+  #     uses: actions/checkout@v2
+
+  #   # - name: cache
+  #   #   uses: actions/cache@v1
+  #   #   with:
+  #   #     path: ~/cache
+  #   #     key: ${{ runner.os }}-cache
+
+  #   - name: setup
+  #     run: |
+  #       bash ./prebuilts/fetch_prebuilts.sh
+    
+  #   - name: build
+  #     run: bash scripts/osx64.sh
+    
+  #   - name: upload osx artifact
+  #     uses: actions/upload-artifact@v1
+  #     with:
+  #       name: java_natives_osx64
+  #       path: java/src/main/resources/natives
+
+  # build-windows32:
+  #   runs-on: windows-latest
+  #   steps:
+  #   - name: checkout
+  #     uses: actions/checkout@v2
+
+  #   # - name: cache windows prebuilts
+  #   #   uses: actions/cache@v1
+  #   #   with:
+  #   #     path: ~/cache
+  #   #     key: ${{ runner.os }}-cache
+
+  #   - name: setup
+  #     run: |
+  #       bash ./prebuilts/fetch_prebuilts.sh
+    
+  #   - name: build
+  #     run: bash scripts/windows32.sh
+    
+  #   - name: upload windows artifact
+  #     uses: actions/upload-artifact@v1
+  #     with:
+  #       name: java_natives_windows32
+  #       path: java/src/main/resources/natives
+
+  # build-windows64:
+  #   runs-on: windows-latest
+  #   steps:
+  #   - name: checkout
+  #     uses: actions/checkout@v2
+
+  #   # - name: cache windows prebuilts
+  #   #   uses: actions/cache@v1
+  #   #   with:
+  #   #     path: ~/cache
+  #   #     key: ${{ runner.os }}-cache
+
+  #   - name: setup
+  #     run: |
+  #       bash ./prebuilts/fetch_prebuilts.sh
+    
+  #   - name: build
+  #     run: bash scripts/windows64.sh
+    
+  #   - name: upload windows artifact
+  #     uses: actions/upload-artifact@v1
+  #     with:
+  #       name: java_natives_windows64
+  #       path: java/src/main/resources/natives
+
+  # deploy-jar:
+  #   needs: [build-linux32, build-linux64, build-osx64, build-windows32, build-windows64]
+
+  #   runs-on: ubuntu-latest
+
+  #   steps:
+  #   - name: checkout
+  #     uses: actions/checkout@v2
+    
+  #   - name: download linux32 artifact
+  #     uses: actions/download-artifact@v1
+  #     with:
+  #       name: java_natives_linux32
+  #       path: java/src/main/resources/natives
+
+  #   - name: download linux64 artifact
+  #     uses: actions/download-artifact@v1
+  #     with:
+  #       name: java_natives_linux64
+  #       path: java/src/main/resources/natives
+
+  #   - name: download osx64 artifact
+  #     uses: actions/download-artifact@v1
+  #     with:
+  #       name: java_natives_osx64
+  #       path: java/src/main/resources/natives
+
+  #   - name: download windows32 artifact
+  #     uses: actions/download-artifact@v1
+  #     with:
+  #       name: java_natives_windows32
+  #       path: java/src/main/resources/natives
+
+  #   - name: download windows64 artifact
+  #     uses: actions/download-artifact@v1
+  #     with:
+  #       name: java_natives_windows64
+  #       path: java/src/main/resources/natives
+
+  #   - name: deploy
+  #     run: |
+  #       cd java
+  #       mvn deploy
+  #       cd -
