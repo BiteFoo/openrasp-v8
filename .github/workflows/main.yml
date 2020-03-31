@@ -135,56 +135,47 @@ jobs:
         name: java_natives_windows64
         path: java/src/main/resources/natives
 
-  # build-jar:
-  #   needs: [build-linux32, build-linux64, build-osx64, build-windows32, build-windows64]
+  deploy-jar:
+    needs: [build-linux32, build-linux64, build-osx64, build-windows32, build-windows64]
 
-  #   # The type of runner that the job will run on
-  #   runs-on: ubuntu-latest
+    runs-on: ubuntu-latest
 
-  #   # Steps represent a sequence of tasks that will be executed as part of the job
-  #   steps:
-  #   # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-  #   - name: checkout
-  #     uses: actions/checkout@v2
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
     
-  #   - name: download linux artifact
-  #     uses: actions/download-artifact@v1
-  #     with:
-  #       name: java_natives_linux32
-  #       path: java/src/main/resources/natives
+    - name: download linux32 artifact
+      uses: actions/download-artifact@v1
+      with:
+        name: java_natives_linux32
+        path: java/src/main/resources/natives
 
-  #   - name: download linux artifact
-  #     uses: actions/download-artifact@v1
-  #     with:
-  #       name: java_natives_linux64
-  #       path: java/src/main/resources/natives
+    - name: download linux64 artifact
+      uses: actions/download-artifact@v1
+      with:
+        name: java_natives_linux64
+        path: java/src/main/resources/natives
 
-  #   - name: download osx artifact
-  #     uses: actions/download-artifact@v1
-  #     with:
-  #       name: java_natives_osx64
-  #       path: java/src/main/resources/natives
+    - name: download osx64 artifact
+      uses: actions/download-artifact@v1
+      with:
+        name: java_natives_osx64
+        path: java/src/main/resources/natives
 
-  #   - name: download windows artifact
-  #     uses: actions/download-artifact@v1
-  #     with:
-  #       name: java_natives_windows32
-  #       path: java/src/main/resources/natives
+    - name: download windows32 artifact
+      uses: actions/download-artifact@v1
+      with:
+        name: java_natives_windows32
+        path: java/src/main/resources/natives
 
-  #   - name: download windows artifact
-  #     uses: actions/download-artifact@v1
-  #     with:
-  #       name: java_natives_windows64
-  #       path: java/src/main/resources/natives
+    - name: download windows64 artifact
+      uses: actions/download-artifact@v1
+      with:
+        name: java_natives_windows64
+        path: java/src/main/resources/natives
 
-  #   - name: build
-  #     run: |
-  #       cd java
-  #       mvn test package
-  #       cd -
-
-  #   - name: upload jar
-  #     uses: actions/upload-artifact@v1
-  #     with:
-  #       name: v8-1.0-SNAPSHOT.jar
-  #       path: java/target/v8-1.0-SNAPSHOT.jar
+    - name: deploy
+      run: |
+        cd java
+        mvn deploy -Dregistry=https://maven.pkg.github.com/baidu-security -Dtoken=${{ secrets.GITHUB_TOKEN }}
+        cd -
